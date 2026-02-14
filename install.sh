@@ -192,27 +192,33 @@ ensure_node() {
 # ── Resolve latest version ───────────────────────────────────────────────────
 
 resolve_version() {
-    # Get the latest release tag from the releases repo
-    local latest
-    latest="$(curl -sfL "https://api.github.com/repos/${RELEASES_REPO}/releases/latest" \
+    # Get the latest release JSON from the releases repo
+    local release_json
+    release_json="$(curl -sfL "https://api.github.com/repos/${RELEASES_REPO}/releases/latest")"
+
+    if [[ -z "$release_json" ]]; then
+        fail "Could not fetch latest release from GitHub."
+    fi
+
+    SOSIE_VERSION="$(printf '%s' "$release_json" \
         | grep -o '"tag_name"\s*:\s*"[^"]*"' \
         | head -1 \
         | sed 's/.*"\([^"]*\)"/\1/')"
 
-    if [[ -z "$latest" ]]; then
-        # Fallback: list tags
-        latest="$(curl -sfL "https://api.github.com/repos/${RELEASES_REPO}/tags?per_page=1" \
-            | grep -o '"name"\s*:\s*"[^"]*"' \
-            | head -1 \
-            | sed 's/.*"\([^"]*\)"/\1/')"
-    fi
-
-    if [[ -z "$latest" ]]; then
+    if [[ -z "$SOSIE_VERSION" ]]; then
         fail "Could not determine latest Sosie version from GitHub."
     fi
 
-    SOSIE_VERSION="$latest"
-    REPO_TARBALL="https://github.com/${RELEASES_REPO}/archive/refs/tags/${SOSIE_VERSION}.tar.gz"
+    # Find the source tarball asset (sosie-source.tar.gz)
+    SOURCE_TARBALL="$(printf '%s' "$release_json" \
+        | grep -o '"browser_download_url"\s*:\s*"[^"]*sosie-source\.tar\.gz"' \
+        | head -1 \
+        | sed 's/.*"\(http[^"]*\)"/\1/')"
+
+    if [[ -z "$SOURCE_TARBALL" ]]; then
+        fail "Release $SOSIE_VERSION has no sosie-source.tar.gz asset.\n  Please check https://github.com/${RELEASES_REPO}/releases"
+    fi
+
     info "Latest version: $SOSIE_VERSION"
 }
 
@@ -226,7 +232,7 @@ download_source() {
     tmp_dir="$(mktemp -d)"
 
     info "Downloading Sosie $SOSIE_VERSION..."
-    curl -#fSL "$REPO_TARBALL" | tar xz -C "$tmp_dir"
+    curl -#fSL -L "$SOURCE_TARBALL" | tar xz -C "$tmp_dir"
 
     # Find the extracted directory (GitHub names it {repo}-{tag_without_leading_v})
     local extracted_dir

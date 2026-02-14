@@ -194,22 +194,22 @@ function Ensure-Node {
 function Resolve-Version {
     try {
         $release = Invoke-RestMethod -Uri "https://api.github.com/repos/${ReleasesRepo}/releases/latest" -UseBasicParsing
-        $script:SosieVersion = $release.tag_name
     } catch {
-        # Fallback: list tags
-        try {
-            $tags = Invoke-RestMethod -Uri "https://api.github.com/repos/${ReleasesRepo}/tags?per_page=1" -UseBasicParsing
-            $script:SosieVersion = $tags[0].name
-        } catch {
-            Write-Fail "Could not determine latest Sosie version from GitHub."
-        }
+        Write-Fail "Could not fetch latest release from GitHub."
     }
 
+    $script:SosieVersion = $release.tag_name
     if (-not $script:SosieVersion) {
         Write-Fail "Could not determine latest Sosie version from GitHub."
     }
 
-    $script:RepoZip = "https://github.com/${ReleasesRepo}/archive/refs/tags/${script:SosieVersion}.zip"
+    # Find the source zip asset (sosie-source.zip)
+    $sourceAsset = $release.assets | Where-Object { $_.name -eq "sosie-source.zip" } | Select-Object -First 1
+    if (-not $sourceAsset) {
+        Write-Fail "Release $script:SosieVersion has no sosie-source.zip asset.`nPlease check https://github.com/$ReleasesRepo/releases"
+    }
+
+    $script:SourceZipUrl = $sourceAsset.browser_download_url
     Write-Ok "Latest version: $script:SosieVersion"
 }
 
@@ -222,7 +222,7 @@ function Download-Source {
     $tmpExtract = Join-Path ([System.IO.Path]::GetTempPath()) "sosie-extract"
 
     Write-Ok "Downloading Sosie $script:SosieVersion..."
-    Invoke-WebRequest -Uri $script:RepoZip -OutFile $tmpZip -UseBasicParsing
+    Invoke-WebRequest -Uri $script:SourceZipUrl -OutFile $tmpZip -UseBasicParsing
     if (Test-Path $tmpExtract) { Remove-Item $tmpExtract -Recurse -Force }
     Expand-Archive -Path $tmpZip -DestinationPath $tmpExtract
 
