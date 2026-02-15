@@ -303,7 +303,8 @@ download_source() {
 setup_venv() {
     local venv_dir="$SOSIE_DIR/.venv"
 
-    if [[ ! -d "$venv_dir" ]]; then
+    if [[ ! -d "$venv_dir" ]] || [[ ! -x "$venv_dir/bin/python3" ]]; then
+        rm -rf "$venv_dir"
         "$PYTHON_CMD" -m venv "$venv_dir"
         info "Virtual environment created"
     else
@@ -318,7 +319,15 @@ setup_venv() {
 
     # Install requirements
     info "Installing Python dependencies (this may take a few minutes)..."
-    "$pip_cmd" install -r "$SOSIE_DIR/requirements.txt" --quiet
+    if ! "$pip_cmd" install -r "$SOSIE_DIR/requirements.txt" --quiet 2>/dev/null; then
+        # Venv may be corrupted — recreate it
+        warn "Recreating virtual environment..."
+        rm -rf "$venv_dir"
+        "$PYTHON_CMD" -m venv "$venv_dir"
+        pip_cmd="$venv_dir/bin/pip"
+        "$pip_cmd" install --upgrade pip --quiet 2>/dev/null || true
+        "$pip_cmd" install -r "$SOSIE_DIR/requirements.txt" --quiet
+    fi
 
     # macOS extras (pywebview + Cocoa bindings)
     if [[ "$OS" == "macos" ]] && [[ -f "$SOSIE_DIR/requirements-macos.txt" ]]; then
@@ -424,6 +433,10 @@ LAUNCHER
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 main() {
+    # Ensure CWD is safe — if user runs from $SOSIE_DIR, rsync --delete
+    # would break the shell's working directory
+    cd "$HOME" 2>/dev/null || true
+
     printf "\n${BOLD}  ╔══════════════════════════════════════╗${RESET}\n"
     printf "${BOLD}  ║       Sosie Installer                ║${RESET}\n"
     printf "${BOLD}  ║       Document Q&A + Deep Research   ║${RESET}\n"
