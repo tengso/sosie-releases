@@ -103,12 +103,14 @@ ensure_python() {
 
     # Query python-build-standalone for the latest release with our Python version
     local release_json
-    release_json="$(curl -sfL "https://api.github.com/repos/indygreg/python-build-standalone/releases?per_page=5")"
+    release_json="$(curl -sfL "https://api.github.com/repos/astral-sh/python-build-standalone/releases?per_page=5")"
 
     local download_url
+    # The GitHub API URL-encodes "+" as "%2B" in browser_download_url
     download_url="$(printf '%s' "$release_json" \
-        | grep -o "https://[^\"]*cpython-${PYTHON_MAJOR}\.[0-9]*+[0-9]*-${PYTHON_TRIPLE}-install_only\.tar\.gz" \
-        | head -1)"
+        | grep -oE "https://[^\"]*cpython-${PYTHON_MAJOR}\.[0-9]+(%2B|\+)[0-9]+-${PYTHON_TRIPLE}-install_only\.tar\.gz" \
+        | head -1 \
+        | sed 's/%2B/+/g')"
 
     if [[ -z "$download_url" ]]; then
         fail "Could not find Python ${PYTHON_MAJOR} standalone build for ${PYTHON_TRIPLE}.

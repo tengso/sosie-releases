@@ -81,8 +81,8 @@ function Ensure-Python {
     }
     $triple = "${arch}-pc-windows-msvc"
 
-    # Query python-build-standalone releases
-    $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/indygreg/python-build-standalone/releases?per_page=5" -UseBasicParsing
+    # Query python-build-standalone releases (repo moved to astral-sh)
+    $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/astral-sh/python-build-standalone/releases?per_page=5" -UseBasicParsing
     $downloadUrl = $null
     foreach ($release in $releases) {
         foreach ($asset in $release.assets) {
