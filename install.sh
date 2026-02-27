@@ -13,11 +13,16 @@
 #
 # Environment variables (all optional):
 #   SOSIE_DIR   — install directory (default: ~/sosie)
+#   SOSIE_SOURCE_REPO — source repository (default: tengso/sosie)
+#   SOSIE_SOURCE_REF  — source branch/tag/commit (default: main)
 # ──────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
 SOSIE_DIR="${SOSIE_DIR:-$HOME/sosie}"
+SOURCE_REPO="${SOSIE_SOURCE_REPO:-tengso/sosie}"
+SOURCE_REF="${SOSIE_SOURCE_REF:-main}"
 RELEASES_REPO="tengso/sosie-releases"
+DOCS_REPO="$RELEASES_REPO"
 DEPS_DIR="$SOSIE_DIR/.deps"
 PYTHON_MAJOR="3.12"
 NODE_MAJOR="20"
@@ -194,7 +199,20 @@ ensure_node() {
 # ── Resolve latest version ───────────────────────────────────────────────────
 
 resolve_version() {
-    # Get the latest release JSON from the releases repo
+    # Try source repository first (latest branch/tag/commit), then fall back
+    # to latest published release source archive for reliability.
+    local source_tarball
+    source_tarball="https://codeload.github.com/${SOURCE_REPO}/tar.gz/${SOURCE_REF}"
+    if curl -sfI "$source_tarball" >/dev/null 2>&1; then
+        SOURCE_TARBALL="$source_tarball"
+        SOSIE_VERSION="${SOURCE_REPO}@${SOURCE_REF}"
+        DOCS_REPO="$SOURCE_REPO"
+        info "Source: $SOSIE_VERSION"
+        return
+    fi
+
+    warn "Source ${SOURCE_REPO}@${SOURCE_REF} not accessible — falling back to latest release"
+
     local release_json
     release_json="$(curl -sfL "https://api.github.com/repos/${RELEASES_REPO}/releases/latest")"
 
@@ -211,7 +229,6 @@ resolve_version() {
         fail "Could not determine latest Sosie version from GitHub."
     fi
 
-    # Find the source tarball asset (sosie-source.tar.gz)
     SOURCE_TARBALL="$(printf '%s' "$release_json" \
         | grep -o '"browser_download_url"\s*:\s*"[^"]*sosie-source\.tar\.gz"' \
         | head -1 \
@@ -221,6 +238,7 @@ resolve_version() {
         fail "Release $SOSIE_VERSION has no sosie-source.tar.gz asset.\n  Please check https://github.com/${RELEASES_REPO}/releases"
     fi
 
+    DOCS_REPO="$RELEASES_REPO"
     info "Latest version: $SOSIE_VERSION"
 }
 
@@ -472,7 +490,7 @@ main() {
     printf "  2. Run Sosie:        ${YELLOW}sosie --browser${RESET}\n"
     printf "     or with GUI:      ${YELLOW}sosie${RESET}  (macOS only)\n"
     printf "     or headless:      ${YELLOW}sosie --headless --db-dir ./data${RESET}\n"
-    printf "\n  Docs: ${BLUE}https://github.com/${RELEASES_REPO}#readme${RESET}\n\n"
+    printf "\n  Docs: ${BLUE}https://github.com/${DOCS_REPO}#readme${RESET}\n\n"
 
     if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
         printf "  ${YELLOW}Note:${RESET} Restart your terminal or run:\n"

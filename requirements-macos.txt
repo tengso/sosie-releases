@@ -1,0 +1,8 @@
+# macOS-only dependencies (PyWebView Cocoa backend)
+# Install with: pip install -r requirements-macos.txt
+pyobjc-core==12.1
+pyobjc-framework-Cocoa==12.1
+pyobjc-framework-Quartz==12.1
+pyobjc-framework-Security==12.1
+pyobjc-framework-UniformTypeIdentifiers==12.1
+pyobjc-framework-WebKit==12.1

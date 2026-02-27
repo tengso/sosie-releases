@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+*.whl
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Environment variables
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# mypy
+.mypy_cache/
+
+# Node / Frontend
+web/node_modules/
+web/dist/
+
+# SQLite databases
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Application data
+data/
+.adk/
+src/agents/.adk/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Build artifacts
+output/
+
+# data
+db/

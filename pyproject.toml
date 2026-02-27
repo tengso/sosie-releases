@@ -1,0 +1,131 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sosie"
+version = "0.1.0"
+description = "Document Q&A and deep research system powered by AI agents"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Sosie Team" }
+]
+keywords = ["ai", "document", "qa", "research", "rag", "llm"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Environment :: Web Environment",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    # Core web framework
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "starlette>=0.27.0",
+    
+    # Database
+    "sqlalchemy>=2.0.0",
+    "aiosqlite>=0.19.0",
+    
+    # HTTP clients
+    "httpx>=0.24.0",
+    "httpcore>=0.17.0",
+    
+    # Email gateway (EWS)
+    "exchangelib>=5.0.0",
+    
+    # AI/LLM
+    "openai>=1.0.0",
+    "google-adk>=1.0.0",
+    
+    # Document parsing
+    "pymupdf>=1.23.0",
+    "pymupdf4llm>=0.2.0",
+    "python-docx>=1.0.0",
+    
+    # File watching
+    "watchdog>=3.0.0",
+    
+    # Utilities
+    "python-dotenv>=1.0.0",
+    "numpy>=1.24.0",
+    "exchangelib>=5.0.0",
+    
+    # CJK search support (optional)
+    "opencc-python-reimplemented>=0.1.7",
+    
+    # Desktop GUI (optional but recommended)
+    "pywebview>=4.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+
+build = [
+    "pyinstaller>=6.0.0",
+    "pywebview>=4.0.0",
+]
+
+[project.scripts]
+sosie = "app:main"
+
+[project.gui-scripts]
+sosie-gui = "app:main"
+
+[project.urls]
+Homepage = "https://github.com/sosie/sosie"
+Documentation = "https://github.com/sosie/sosie#readme"
+Repository = "https://github.com/sosie/sosie.git"
+Issues = "https://github.com/sosie/sosie/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src", "app.py"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/web/dist",
+    "/app.py",
+    "/requirements.txt",
+    "/README.md",
+    "/LICENSE",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+select = ["E", "F", "W", "I", "N", "UP"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"

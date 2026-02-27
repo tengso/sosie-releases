@@ -12,12 +12,17 @@
 #
 # Environment variables (all optional):
 #   SOSIE_DIR   — install directory (default: ~/sosie)
+#   SOSIE_SOURCE_REPO — source repository (default: tengso/sosie)
+#   SOSIE_SOURCE_REF  — source branch/tag/commit (default: main)
 # ──────────────────────────────────────────────────────────────────────────────
 
 $ErrorActionPreference = "Stop"
 
 $SosieDir = if ($env:SOSIE_DIR) { $env:SOSIE_DIR } else { Join-Path $HOME "sosie" }
+$SourceRepo = if ($env:SOSIE_SOURCE_REPO) { $env:SOSIE_SOURCE_REPO } else { "tengso/sosie" }
+$SourceRef = if ($env:SOSIE_SOURCE_REF) { $env:SOSIE_SOURCE_REF } else { "main" }
 $ReleasesRepo = "tengso/sosie-releases"
+$script:DocsRepo = $ReleasesRepo
 $DepsDir = Join-Path $SosieDir ".deps"
 $PythonMajor = "3.12"
 $NodeMajor = 20
@@ -192,6 +197,20 @@ function Ensure-Node {
 # ── Resolve latest version ───────────────────────────────────────────────────
 
 function Resolve-Version {
+    # Try source repository first (latest branch/tag/commit), then fall back
+    # to latest published release source archive for reliability.
+    $sourceZipUrl = "https://codeload.github.com/$SourceRepo/zip/$SourceRef"
+    try {
+        Invoke-WebRequest -Uri $sourceZipUrl -Method Head -UseBasicParsing | Out-Null
+        $script:SosieVersion = "$SourceRepo@$SourceRef"
+        $script:SourceZipUrl = $sourceZipUrl
+        $script:DocsRepo = $SourceRepo
+        Write-Ok "Source: $script:SosieVersion"
+        return
+    } catch {
+        Write-Warn "Source $SourceRepo@$SourceRef not accessible — falling back to latest release"
+    }
+
     try {
         $release = Invoke-RestMethod -Uri "https://api.github.com/repos/${ReleasesRepo}/releases/latest" -UseBasicParsing
     } catch {
@@ -210,6 +229,7 @@ function Resolve-Version {
     }
 
     $script:SourceZipUrl = $sourceAsset.browser_download_url
+    $script:DocsRepo = $ReleasesRepo
     Write-Ok "Latest version: $script:SosieVersion"
 }
 
@@ -421,7 +441,7 @@ function Main {
     Write-Host "  2. Run Sosie:        " -NoNewline; Write-Host "sosie --browser" -ForegroundColor Yellow
     Write-Host "     or headless:      " -NoNewline; Write-Host "sosie --headless --db-dir .\data" -ForegroundColor Yellow
     Write-Host ""
-    Write-Host "  Docs: https://github.com/$ReleasesRepo#readme" -ForegroundColor Blue
+    Write-Host "  Docs: https://github.com/$script:DocsRepo#readme" -ForegroundColor Blue
     Write-Host ""
     Write-Host "  Note: Restart your terminal for PATH changes to take effect." -ForegroundColor Yellow
     Write-Host ""
